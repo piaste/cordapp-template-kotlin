@@ -1,7 +1,10 @@
 package com.template.webserver
 
+import com.template.flows.ProductIssueInitiator
+import net.corda.core.messaging.startFlow
 import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -21,5 +24,20 @@ class Controller(rpc: NodeRPCConnection) {
     @GetMapping(value = "/templateendpoint", produces = arrayOf("text/plain"))
     private fun templateendpoint(): String {
         return "Define an endpoint here."
+    }
+
+    @GetMapping(value = "/buildProduct/{productCode}", produces = arrayOf("text/plain"))
+    private fun buildProduct(@PathVariable("productCode") productCode: String): String {
+
+        val response =
+                proxy.startFlow(::ProductIssueInitiator,
+                        productCode,
+                        "1234",
+                        100.toBigDecimal(),
+                        proxy.partiesFromName("PartyA", false).single())
+                        .returnValue
+                        .get()
+
+        return response.toString()
     }
 }

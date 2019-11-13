@@ -1,8 +1,11 @@
 package com.template.webserver
 
+import com.template.flows.ProductIssueInitiator
 import net.corda.client.rpc.CordaRPCClient
 import net.corda.client.rpc.CordaRPCConnection
+import net.corda.core.identity.Party
 import net.corda.core.messaging.CordaRPCOps
+import net.corda.core.messaging.startFlow
 import net.corda.core.utilities.NetworkHostAndPort
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -44,6 +47,7 @@ open class NodeRPCConnection(
             val rpcConnection = rpcClient.start(username, password)
             proxy = rpcConnection.proxy
     }
+
 
     @PreDestroy
     override fun close() {
