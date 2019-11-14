@@ -4,6 +4,13 @@ import com.template.flows.ProductIssueInitiator
 import com.template.flows.ProductWorkInitiator
 import com.template.states.ProductOperation
 import com.template.states.ProductState
+import io.swagger.server.models.Articolo
+import net.corda.core.contracts.StateAndRef
+import net.corda.core.contracts.StateRef
+import net.corda.core.contracts.UniqueIdentifier
+import net.corda.core.identity.AbstractParty
+import net.corda.core.identity.Party
+import net.corda.core.internal.toMultiMap
 import net.corda.core.messaging.startFlow
 import net.corda.core.node.services.Vault
 import net.corda.core.node.services.vault.QueryCriteria
@@ -11,11 +18,62 @@ import net.corda.core.node.services.vault.QueryCriteria.*
 import net.corda.core.node.services.vault.builder
 import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.*
+import java.math.BigDecimal
 import java.util.*
+
+
+/*data class ProductStateDTO
+            ( val productCode: String
+            , val batchCode: String
+            , val quantity: BigDecimal
+            , val owner: String
+            , val history : List<ProductOperation>
+            , val id : UUID
+            , val participants: List<String>
+    ) {
+    constructor(ps : ProductState) : this(ps.productCode, ps.batchCode, ps.quantity, ps.owner.name.organisation, ps.history, ps.linearId.id,
+            ps.participants.map { it.nameOrNull()?.toString() ?: "" })
+}*/
+
+data class ArticoloDTO
+(val idArticolo : String,
+ val descrizione : String,
+ val lottiEsistenti : List<String>)
+
+data class ProductOperationDTO
+    ( val descrizione : String
+    , val natura : String
+    , val operatore : String
+    , val id : UUID
+    )
+data class ProductStateDTO
+( val idArticolo: String
+  , val lotto: String
+  , val operazioni : List<ProductOperationDTO>
+) {
+    constructor(ps : ProductState) : this(
+            idArticolo =ps.productCode,
+            lotto = ps.batchCode,
+            operazioni =
+                ps.history.map {
+                    ProductOperationDTO(
+                        descrizione = it.description,
+                        natura = it.nature,
+                        operatore = it.operator,
+                        id = ps.linearId.id
+                )
+            }
+    )
+
+    constructor(sar : StateAndRef<ProductState>) : this(sar.state.data) {
+        var ps = sar.state.data
+    }
+}
 
 /**
  * Define your API endpoints here.
  */
+@CrossOrigin(origins = ["*"])
 @RestController
 @RequestMapping("/") // The paths for HTTP requests are relative to this base path.
 class Controller(rpc: NodeRPCConnection) {
@@ -31,29 +89,31 @@ class Controller(rpc: NodeRPCConnection) {
         return "Define an endpoint here."
     }
 
-    @GetMapping(value = "/buildProduct/{productCode}", produces = arrayOf("application/json"))
-    private fun buildProduct(@PathVariable("productCode") productCode: String): List<ProductState> {
+    @PostMapping(value = "/blockchain", produces = arrayOf("application/json"))
+    private fun PostBlockchain(@RequestParam("idArticolo") idArticolo: String,
+                              @RequestParam("lotto") lotto: String): List<ProductStateDTO>
+    {
 
         val response =
                 proxy.startFlow(::ProductIssueInitiator,
-                        productCode,
-                        "1234",
+                        idArticolo,
+                        lotto,
                         100.toBigDecimal(),
                         proxy.partiesFromName("PartyA", false).single())
                         .returnValue
                         .get()
 
         // return response.toString()
-        return proxy.vaultTrackByCriteria(criteria = VaultQueryCriteria(Vault.StateStatus.ALL), contractStateType = ProductState::class.java)
+        return proxy.vaultTrackByCriteria(criteria = VaultQueryCriteria(Vault.StateStatus.UNCONSUMED), contractStateType = ProductState::class.java)
                 .snapshot.states
-                .map { it.state.data }
+                .map { ProductStateDTO(it.state.data    ) }
                 //.map { it.linearId.id.toString()  }
                 .toList()
     }
 
     @PostMapping(value = "/operazioni/{idOperazionePrecedente}/append", produces = arrayOf("application/json"))
     private fun buildProduct(@PathVariable("idOperazionePrecedente") idOperazionePrecedente: String,
-                             @RequestBody operation: ProductOperation): List<ProductState> {
+                             @RequestBody operation: ProductOperation): List<ProductStateDTO> {
 
         val response =
                 proxy.startFlow(::ProductWorkInitiator,
@@ -66,34 +126,42 @@ class Controller(rpc: NodeRPCConnection) {
                         .get()
 
         // return response.toString()
-        return proxy.vaultTrackByCriteria(criteria = VaultQueryCriteria(Vault.StateStatus.ALL), contractStateType = ProductState::class.java)
+        return proxy.vaultTrackByCriteria(criteria = VaultQueryCriteria(Vault.StateStatus.UNCONSUMED), contractStateType = ProductState::class.java)
                 .snapshot.states
-                .map { it.state.data }
+                .map { ProductStateDTO(it.state.data) }
                 //.map { it.linearId.id.toString()  }
                 .toList()
 
     }
 
+    @GetMapping(value = "/articoli", produces = arrayOf("application/json"))
+    private fun GetArticoli() : List<ArticoloDTO> {
+        return proxy.vaultTrackByCriteria(criteria = VaultQueryCriteria(Vault.StateStatus.UNCONSUMED), contractStateType = ProductState::class.java)
+                .snapshot.states
+                .map { Pair(it.state.data.productCode, it.state.data.batchCode) }
+                .toMultiMap()
+                .map { ArticoloDTO( idArticolo = it.key , descrizione = "TODO", lottiEsistenti = it.value ) }
+    }
 
 
     @GetMapping(value = "/blockchain", produces = arrayOf("application/json"))
     private fun GetBlockchain(@RequestParam("idArticolo") idArticolo: String?,
                               @RequestParam("idPuntoVendita") idPuntoVendita: String?,
-                              @RequestParam("lotto") lotto: String?): List<Map<String, Any>> {
+                              @RequestParam("lotto") lotto: String?): List<ProductStateDTO> {
 
-        val results  = builder {
+        val results = builder {
 
-            var criteria : QueryCriteria = VaultQueryCriteria(Vault.StateStatus.ALL)
+            var criteria: QueryCriteria = VaultQueryCriteria(Vault.StateStatus.UNCONSUMED)
 
-            if( !lotto.isNullOrBlank()) {
+            if (!lotto.isNullOrBlank()) {
 //                criteria = criteria.and(VaultCustomQueryCriteria(ProductSchemaV1.PersistentProductState::batchCode.equal(lotto)))
             }
 
-            if( !idArticolo.isNullOrBlank()) {
+            if (!idArticolo.isNullOrBlank()) {
 //                criteria = criteria.and(VaultCustomQueryCriteria(ProductSchemaV1.PersistentProductState::productCode.equal(idArticolo)))
             }
 
-            if( !idPuntoVendita.isNullOrBlank()) {
+            if (!idPuntoVendita.isNullOrBlank()) {
 //                criteria = criteria.and(VaultCustomQueryCriteria(ProductSchemaV1.PersistentProductState::owner.equal(idPuntoVendita)))
             }
 
@@ -102,15 +170,18 @@ class Controller(rpc: NodeRPCConnection) {
 
         return results.snapshot.states
                 .map { it.state.data }
-                .filter { lotto.isNullOrBlank() || it.batchCode == lotto}
-                .filter { idArticolo.isNullOrBlank() || it.productCode == idArticolo}
-                .filter { idPuntoVendita.isNullOrBlank() || it.owner.name.organisation == idPuntoVendita}
-                                       .map { mapOf(
+                .filter { lotto.isNullOrBlank() || it.batchCode == lotto }
+                .filter { idArticolo.isNullOrBlank() || it.productCode == idArticolo }
+                .filter { idPuntoVendita.isNullOrBlank() || it.owner.name.organisation == idPuntoVendita }
+                .map { ProductStateDTO(it) }
+        /*mapOf(
                                                "idArticolo" to it.productCode,
                                                "idLotto" to it.batchCode,
                                                "quantità" to it.quantity.toPlainString(),
                                                "proprietario" to it.owner.name.organisation)
                                        }
+
+            */
     }
 //    /**
 //     * Ritorna la lista degli idArticolo e descrizioni gestiti dalla blockchain

@@ -17,16 +17,19 @@ import javax.persistence.*
 
 
 @CordaSerializable
-
 data class ProductOperation
   ( val description : String,
   val nature : String,
   val operator : String
-) {
+
+)
+/*
+{
     fun toPersist(parent : ProductState) = ProductSchemaV1.PersistentOperationState(
             description, nature, operator, parent
     )
 }
+*/
 
 
 
@@ -42,15 +45,15 @@ data class ProductState
     , val history : List<ProductOperation>
     , override val linearId : UniqueIdentifier
     , override val participants: List<AbstractParty> = listOf(owner)
-    ) : LinearState, QueryableState {
-    /**
+    ) : LinearState/*, QueryableState {
+    *//**
      * Enumerate the schemas this state can export representations of itself as.
-     */
+     *//*
     override fun supportedSchemas() = listOf(ProductSchemaV1)
 
-    /**
+    *//**
      * Export a representation for the given schema.
-     */
+     *//*
     override fun generateMappedObject(schema: MappedSchema) = ProductSchemaV1.PersistentProductState(
         productCode, batchCode, quantity, owner.name.toString(), history.map {it.toPersist(this) }.toMutableList()
     )
@@ -116,3 +119,5 @@ object ProductSchemaV1 : MappedSchema(schemaFamily = ProductSchema.javaClass, ve
 
     ) : PersistentState()
 }
+
+        */
