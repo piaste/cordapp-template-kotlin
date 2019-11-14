@@ -1,0 +1,5 @@
+flow start ProductIssueInitiator productCode: "FAGIOLI", batchCode: "ABCDEF", quantity: 140.22, owner: PartyA
+
+run vaultQuery contractStateType : com.template.states.ProductState
+
+flow start ProductMoveInitiator id: e4094b94-aa48-4a1f-9164-3972fe0f4cfe, moveQuantity: 80.10, sender: PartyA, receiver: PartyB
