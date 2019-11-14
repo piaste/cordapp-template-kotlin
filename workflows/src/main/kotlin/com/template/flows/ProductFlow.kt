@@ -3,6 +3,7 @@ package com.template.flows
 import co.paralleluniverse.fibers.Suspendable
 import com.google.common.collect.ImmutableList
 import com.template.contracts.ProductContract
+import com.template.states.ProductOperation
 import com.template.states.ProductState
 import net.corda.core.contracts.Command
 import net.corda.core.contracts.UniqueIdentifier
@@ -42,6 +43,7 @@ class ProductIssueInitiator(
                 , batchCode = batchCode
                 , quantity = quantity
                 , owner = owner
+                , history = listOf()
                 , linearId = UniqueIdentifier())
 
         val txBuilder = TransactionBuilder(notary)
@@ -95,7 +97,7 @@ class ProductMoveInitiator(
         val foundProductState = serviceHub.vaultService.queryBy(ProductState::class.java, queryCriteria).states
         if (foundProductState.size != 1) {
             System.out.println("Linear Id 1:$uuid")
-            throw FlowException(String.format("Obligation with id %s not found.", uuid))
+            throw FlowException(String.format("Product state with id %s not found.", uuid))
         }
         //System.out.println("Linear Id 2:"+linearId);
         return foundProductState[0]
@@ -146,6 +148,81 @@ class ProductMoveResponder(val counterpartySession: FlowSession) : FlowLogic<Sig
             // A contract’s verify function should be used to define what is and is not possible within a transaction.
             override fun checkTransaction(stx: SignedTransaction) = requireThat {
                 val output = stx.tx.outputs[0].data
+                "The output must be a ProductState" using (output is ProductState)
+            }
+        }
+        val txWeJustSignedId = subFlow(signedTransactionFlow)
+        return subFlow(ReceiveFinalityFlow(counterpartySession, txWeJustSignedId.id))
+    }
+}
+
+
+
+
+@InitiatingFlow
+@StartableByRPC
+class ProductWorkInitiator(
+        val id: UUID
+        , val description: String
+        , val nature: String
+        , val operator: String
+        ,  val owner : Party) : FlowLogic<SignedTransaction>() {
+    override val progressTracker = ProgressTracker()
+
+    fun getProductByLinearId(uuid: UUID) : StateAndRef<ProductState> {
+        val queryCriteria = QueryCriteria.LinearStateQueryCriteria(
+                participants = ImmutableList.of(owner),
+                uuid = ImmutableList.of(uuid),
+                status = Vault.StateStatus.UNCONSUMED,
+                contractStateTypes = setOf(ProductState::class.java))
+
+        val foundProductState = serviceHub.vaultService.queryBy(ProductState::class.java, queryCriteria).states
+        if (foundProductState.size != 1) {
+            System.out.println("Linear Id 1:$uuid")
+            throw FlowException(String.format("Product state with id %s not found.", uuid))
+        }
+        //System.out.println("Linear Id 2:"+linearId);
+        return foundProductState[0]
+
+    }
+
+    @Suspendable
+    override fun call() : SignedTransaction {
+        // Initiator flow logic goes here.
+        val notary = serviceHub.networkMapCache.notaryIdentities.first()
+        val command = Command(ProductContract.Commands.Work(), listOf(owner).map { it.owningKey })
+
+        val ownedState = getProductByLinearId(id)
+
+        val beforeState = ownedState.state.data
+        //TODO: non parte dell'API
+        val newQuantity = beforeState.quantity
+        val afterState = beforeState.copy(quantity = newQuantity, history = beforeState.history.plus(ProductOperation(description, nature, operator)))
+
+        val txBuilder = TransactionBuilder(notary)
+                .addInputState(ownedState)
+                .addOutputState(afterState, ProductContract.ID)
+                .addCommand(command)
+
+        txBuilder.verify(serviceHub)
+        val initialSignedTransaction = serviceHub.signInitialTransaction(txBuilder)
+        val sessions = (listOf(owner) - ourIdentity).map { initiateFlow(it) }
+        val fullySignedTransaction = subFlow(CollectSignaturesFlow(initialSignedTransaction, sessions))
+        return subFlow(FinalityFlow(fullySignedTransaction, sessions))
+
+    }
+}
+
+@InitiatedBy(ProductWorkInitiator::class)
+class ProductWorkResponder(val counterpartySession: FlowSession) : FlowLogic<SignedTransaction>() {
+    @Suspendable
+    override fun call() : SignedTransaction {
+        // Responder flow logic goes here.
+        val signedTransactionFlow = object : SignTransactionFlow(counterpartySession) {
+            // Note: The checkTransaction function should be used only to model business logic.
+            // A contract’s verify function should be used to define what is and is not possible within a transaction.
+            override fun checkTransaction(stx: SignedTransaction) = requireThat {
+                val output = stx.tx.outputs.single().data
                 "The output must be a ProductState" using (output is ProductState)
             }
         }

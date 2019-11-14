@@ -1,0 +1,1 @@
+taskkill /f /im java.exe & gradlew.bat clean deployNodes && cd build\nodes\PartyA && java -jar corda.jar & cd ../../../

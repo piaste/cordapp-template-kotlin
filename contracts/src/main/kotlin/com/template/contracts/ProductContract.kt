@@ -33,18 +33,35 @@ class ProductContract : Contract {
             }
             is Commands.Move -> requireThat {
                 "There should be one input state" using (tx.inputs.size == 1)
-                "The input state must be of type ProductState" using (tx.inputs[0].state.data    is ProductState)
+                "The input state must be of type ProductState" using (tx.inputs[0].state.data is ProductState)
                 val inputState = tx.inputs[0].state.data as ProductState
 
                 "There should be at least one output state" using (tx.outputs.isNotEmpty())
-                "The output states must be of type ProductState" using (tx.outputs.all { it.data  is ProductState })
+                "The output states must be of type ProductState" using (tx.outputs.all { it.data is ProductState })
 
                 val newStates = tx.outputs.map { it.data as ProductState }
-                "The product code must not change" using (newStates.all { it.productCode == inputState.productCode})
+                "The product code must not change" using (newStates.all { it.productCode == inputState.productCode })
                 "The batch code must not change" using (newStates.all { it.batchCode == inputState.batchCode })
 
-                "The total quantity must not increase" using (newStates.map {it.quantity}
-                                                                       .fold(BigDecimal.ZERO, BigDecimal::add) <= inputState.quantity )
+                "The total quantity must not increase" using (newStates.map { it.quantity }
+                        .fold(BigDecimal.ZERO, BigDecimal::add) <= inputState.quantity)
+            }
+
+            is Commands.Work -> requireThat {
+                "There should be one input state" using (tx.inputs.size == 1)
+                "The input state must be of type ProductState" using (tx.inputs[0].state.data is ProductState)
+                val inputState = tx.inputs[0].state.data as ProductState
+
+                "There should be one output state" using (tx.outputs.size == 1)
+                "The output state must be of type ProductState" using (tx.outputs[0].data is ProductState)
+                val outputState = tx.outputs[0].data as ProductState
+
+                "The product code must not change" using (outputState.productCode == inputState.productCode)
+                "The batch code must not change" using (outputState.batchCode == inputState.batchCode)
+
+                "The total quantity must not increase" using (outputState.quantity <= inputState.quantity)
+
+                "The history length must increase by exactly one" using (outputState.history.size == 1 + inputState.history.size)
             }
         }
     }
@@ -53,5 +70,6 @@ class ProductContract : Contract {
     interface Commands : CommandData {
         class Issue : Commands
         class Move : Commands
+        class Work : Commands
     }
 }
