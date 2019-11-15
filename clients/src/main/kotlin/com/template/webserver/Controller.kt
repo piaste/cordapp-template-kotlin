@@ -83,6 +83,7 @@ class Controller(rpc: NodeRPCConnection) {
     }
 
     private val proxy = rpc.proxy
+    val foo = bar
 
     @GetMapping(value = "/templateendpoint", produces = arrayOf("text/plain"))
     private fun templateendpoint(): String {
