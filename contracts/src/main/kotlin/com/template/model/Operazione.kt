@@ -2,15 +2,9 @@ package org.openapitools.model
 
 import java.util.Objects
 import com.fasterxml.jackson.annotation.JsonProperty
+import net.corda.core.serialization.CordaSerializable
 import org.openapitools.model.Ingrediente
 import org.openapitools.model.Soggetto
-import javax.validation.constraints.DecimalMax
-import javax.validation.constraints.DecimalMin
-import javax.validation.constraints.Max
-import javax.validation.constraints.Min
-import javax.validation.constraints.NotNull
-import javax.validation.constraints.Pattern
-import javax.validation.constraints.Size
 
 /**
  * 
@@ -22,28 +16,38 @@ import javax.validation.constraints.Size
  * @param soggetti 
  * @param dataRegistrazione Timestamp del momento in cui è stata effettuata l'operazione
  */
+@CordaSerializable
 data class Operazione (
 
-        @get:NotNull 
+        
+
         @JsonProperty("dataOperazione") val dataOperazione: java.time.LocalDate,
 
-        @get:NotNull 
         @JsonProperty("natura") val natura: kotlin.String,
 
-        @get:NotNull 
-        @JsonProperty("descrizione") val descrizione: kotlin.String,
+        @JsonProperty("descrizione") val descrizione: String,
 
-        @get:NotNull 
         @JsonProperty("ingredienti") val ingredienti: kotlin.collections.List<Ingrediente>,
 
-        @get:NotNull 
         @JsonProperty("soggetti") val soggetti: kotlin.collections.List<Soggetto>,
 
-        @get:NotNull 
         @JsonProperty("dataRegistrazione") val dataRegistrazione: java.time.LocalDate,
 
         @JsonProperty("appezzamentoOperazione") val appezzamentoOperazione: kotlin.String? = null
-) {
+)
 
+enum class NaturaOperazione(val valore : String) {
+        Trasformazione("Trasformazione"),
+        TrasportoLotti("Trasporto lotti"),
+        RicezioneLotti("Ricezione lotti"),
+        Fertilizzazione("Fertilizzazione"),
+        Aratura("Aratura"),
+        Fresatura("Fresatura"),
+        Semina("Semina"),
+        FaseQuiescenza("Fase di quiescenza"),
+        ConcimazioniFogliarie("Concimazioni fogliarie"),
+        Raccolta("Raccolta"),
+        Macinazione("Macinazione"),
+        Produzione("Produzione"),
+        TrasportoPuntoVendita("Trasporto al punto vendita")
 }
-

@@ -1,6 +1,7 @@
 package com.template.states
 
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.template.contracts.*
 import net.corda.core.contracts.*
 import net.corda.core.identity.AbstractParty
@@ -15,31 +16,25 @@ import org.hibernate.annotations.CascadeType
 import org.hibernate.engine.spi.CascadeStyles.PERSIST
 import javax.persistence.*
 
-@CordaSerializable
-data class ProductOperation
-  ( val description : String,
-    val nature : String,
-    val operator : String
-  )
-/* { fun toPersist(parent : ProductState) = ProductSchemaV1.PersistentOperationState(description, nature, operator, parent) }
-*/
-
-
 
 // *********
 // * State *
 // *********
 
-@BelongsToContract(ProductContract::class)
-data class ProductState
-    ( val productCode: String
-    , val batchCode: String
-    , val quantity: BigDecimal
-    , val owner: Party
-    , val history : List<ProductOperation>
-    , override val linearId : UniqueIdentifier
-    , override val participants: List<AbstractParty> = listOf(owner)
-    ) : LinearState
+//
+//@BelongsToContract(ProductContract::class)
+//data class ProductState (
+//          val productCode: String
+//        , val batchCode: String
+//        , val quantity: BigDecimal
+//        , val owner: Party
+//
+//        , val history: List<BlockchainOperazioni>
+//        , override val linearId : UniqueIdentifier
+//        , override val participants: List<AbstractParty> = listOf(owner)
+//
+//) : LinearState
+
 /*, QueryableState {
     *//**
      * Enumerate the schemas this state can export representations of itself as.
