@@ -4,7 +4,7 @@ import com.template.flows.ProductIssueInitiator
 import com.template.flows.ProductWorkInitiator
 import com.template.states.ProductOperation
 import com.template.states.ProductState
-import io.swagger.server.models.Articolo
+import org.openapitools.model.*
 import net.corda.core.contracts.StateAndRef
 import net.corda.core.contracts.StateRef
 import net.corda.core.contracts.UniqueIdentifier
@@ -17,9 +17,14 @@ import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.node.services.vault.QueryCriteria.*
 import net.corda.core.node.services.vault.builder
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
 import java.util.*
+import javax.validation.Valid
+import javax.validation.constraints.NotNull
 
 
 /*data class ProductStateDTO
@@ -46,6 +51,8 @@ data class ProductOperationDTO
     , val operatore : String
     , val id : UUID
     )
+
+
 data class ProductStateDTO
 ( val idArticolo: String
   , val lotto: String
@@ -83,7 +90,7 @@ class Controller(rpc: NodeRPCConnection) {
     }
 
     private val proxy = rpc.proxy
-    val foo = bar
+
 
     @GetMapping(value = "/templateendpoint", produces = arrayOf("text/plain"))
     private fun templateendpoint(): String {
@@ -215,6 +222,127 @@ class Controller(rpc: NodeRPCConnection) {
 //     * @param body  (optional)
 //     */
 //    @Location("/operazioni/{idOperazionePrecedente}/append") class operazioniIdOperazionePrecedenteAppendPost(val idOperazionePrecedente: kotlin.String, val body: NuovaOperazione)
+
+    @RestController
+    @Validated
+    @RequestMapping("\${api.base-path:/v1}")
+    class DefaultApiController() {
+
+
+        @RequestMapping(
+                value = ["/natureoperazioni"],
+                produces = ["application/json"],
+                method = [RequestMethod.GET])
+        fun natureoperazioniGet(): ResponseEntity<List<String>> {
+            return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+        }
+
+
+        @RequestMapping(
+                value = ["/storytelling/{idArticolo}/{natura}/images"],
+                produces = ["application/json"],
+                method = [RequestMethod.GET])
+        fun storytellingIdArticoloNaturaImagesGet( @PathVariable("idArticolo") idArticolo: String
+                                                   , @PathVariable("natura") natura: String
+        ): ResponseEntity<List<String>> {
+            return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+        }
+
+
+        @RequestMapping(
+                value = ["/storytelling/{idArticolo}/{natura}/overrideText"],
+                produces = ["text/plain"],
+                method = [RequestMethod.GET])
+        fun storytellingIdArticoloNaturaOverrideTextGet( @PathVariable("idArticolo") idArticolo: String
+                                                         , @PathVariable("natura") natura: String
+        ): ResponseEntity<String> {
+            return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+        }
+
+
+        @RequestMapping(
+                value = ["/storytelling/{idArticolo}/{natura}/text"],
+                produces = ["text/plain"],
+                method = [RequestMethod.GET])
+        fun storytellingIdArticoloNaturaTextGet( @PathVariable("idArticolo") idArticolo: String
+                                                 , @PathVariable("natura") natura: String
+        ): ResponseEntity<String> {
+            return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+        }
+    }
+
+    @RestController
+    @Validated
+    @RequestMapping("\${api.base-path:/v1}")
+    class ProduttoreApiController() {
+
+
+        @RequestMapping(
+                value = ["/articoli"],
+                produces = ["application/json"],
+                method = [RequestMethod.GET])
+        fun articoliGet(): ResponseEntity<List<Articolo>> {
+            return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+        }
+
+
+        @RequestMapping(
+                value = ["/blockchain"],
+                produces = ["application/json"],
+                method = [RequestMethod.GET])
+        fun blockchainGet(@NotNull  @RequestParam(value = "idArticolo", required = true) idArticolo: String
+                          , @RequestParam(value = "idPuntoVendita", required = false) idPuntoVendita: String?
+                          , @RequestParam(value = "lotto", required = false) lotto: String?
+        ): ResponseEntity<List<Blockchain>> {
+            return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+        }
+
+
+        @RequestMapping(
+                value = ["/blockchain/{idOperazionePrecedente}"],
+                produces = ["application/json"],
+                consumes = ["application/json"],
+                method = [RequestMethod.POST])
+        fun blockchainIdOperazionePrecedentePost( @PathVariable("idOperazionePrecedente") idOperazionePrecedente: String
+                                                  , @Valid @RequestBody operazione: Operazione?
+        ): ResponseEntity<String> {
+            return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+        }
+
+
+        @RequestMapping(
+                value = ["/blockchain"],
+                produces = ["application/json"],
+                consumes = ["application/json"],
+                method = [RequestMethod.POST])
+        fun blockchainPost(@NotNull  @RequestParam(value = "idArticolo", required = true) idArticolo: String
+                           ,@NotNull @RequestParam(value = "lotto", required = true) lotto: String
+                           , @Valid @RequestBody operazione: Operazione?
+        ): ResponseEntity<String> {
+            return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+        }
+    }
+
+
+    @RestController
+    @Validated
+    @RequestMapping("\${api.base-path:/v1}")
+    class ConsumerApiController() {
+
+
+        @RequestMapping(
+                value = ["/blockchain"],
+                produces = ["application/json"],
+                method = [RequestMethod.GET])
+        fun blockchainGet(@NotNull @RequestParam(value = "idArticolo", required = true) idArticolo: String
+                          , @RequestParam(value = "idPuntoVendita", required = false) idPuntoVendita: String?
+                          , @RequestParam(value = "lotto", required = false) lotto: String?
+        ): ResponseEntity<List<Blockchain>> {
+            return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+        }
+    }
+
+
 
 }
 

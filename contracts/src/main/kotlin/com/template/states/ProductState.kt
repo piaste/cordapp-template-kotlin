@@ -15,20 +15,13 @@ import org.hibernate.annotations.CascadeType
 import org.hibernate.engine.spi.CascadeStyles.PERSIST
 import javax.persistence.*
 
-
 @CordaSerializable
 data class ProductOperation
   ( val description : String,
-  val nature : String,
-  val operator : String
-
-)
-/*
-{
-    fun toPersist(parent : ProductState) = ProductSchemaV1.PersistentOperationState(
-            description, nature, operator, parent
-    )
-}
+    val nature : String,
+    val operator : String
+  )
+/* { fun toPersist(parent : ProductState) = ProductSchemaV1.PersistentOperationState(description, nature, operator, parent) }
 */
 
 
@@ -36,6 +29,7 @@ data class ProductOperation
 // *********
 // * State *
 // *********
+
 @BelongsToContract(ProductContract::class)
 data class ProductState
     ( val productCode: String
@@ -45,7 +39,8 @@ data class ProductState
     , val history : List<ProductOperation>
     , override val linearId : UniqueIdentifier
     , override val participants: List<AbstractParty> = listOf(owner)
-    ) : LinearState/*, QueryableState {
+    ) : LinearState
+/*, QueryableState {
     *//**
      * Enumerate the schemas this state can export representations of itself as.
      *//*

@@ -7,8 +7,8 @@ info:
   version: 1.0.0
   title: Piano B
   termsOfService: 'http://swagger.io/terms/'
-  contact: 
-    email: sticazzi@zeuslab.it
+  contact:
+    email: bloccatena@zeuslab.it
   license:
     name: Apache 2.0
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
@@ -16,11 +16,90 @@ tags:
   - name: consumer
   - name: produttore
 paths:
-  '/operazioni/{idOperazionePrecedente}/append':
+
+  /articoli:
+    get:
+      tags:
+        - produttore
+      summary: Ritorna la lista degli idArticolo e descrizioni gestiti dalla blockchain
+      responses:
+        '200':
+          description: Lista degli articoli supportati, con i lotti già precedentemente inseriti
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Articolo'
+
+  /blockchain:
+    get:
+      tags:
+        - consumer
+        - produttore
+      summary: Ritorna tutte le blockchain che interessano la merce identificata dai parametri di query
+      parameters:
+        - name: idArticolo
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: idPuntoVendita
+          in: query
+          schema:
+            type: string
+        - name: lotto
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operazione registrata correttamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Blockchain'
     post:
       tags:
-         - produttore
+        - produttore
+      summary: Inizia una nuova blockchain associata ad un articolo e lotto
+      parameters:
+        - name: idArticolo
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: lotto
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Id numerico della prima operazione della nuova blockchain
+          content:
+            application/json:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Operazione'
+  '/blockchain/{idOperazionePrecedente}':
+    post:
+      tags:
+        - produttore
       summary: Aggiunge una nuova operazione subito dopo l'operazione specificata
+      parameters:
+        - name: idOperazionePrecedente
+          in: path
+          description: Id numerico dell'operazione a cui agganciare l'operazione fornita
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Id numerico della nuova operazione aggiunta alla blockchain
@@ -32,90 +111,100 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NuovaOperazione'
-      parameters:
-        - name: idOperazionePrecedente
-          in: path
-          description: Id numerico dell'operazione a cui agganciare l'operazione fornita
-          required: true
-          schema:
-            type: string
-          
-  /articoli:
+              $ref: '#/components/schemas/Operazione'
+  /natureoperazioni:
     get:
-      tags:
-        - produttore
-      summary: Ritorna la lista degli idArticolo e descrizioni gestiti dalla blockchain
+      summary: Ritorna l'elenco delle nature operazioni supportate
       responses:
         '200':
-           description: Lista degli articoli supportati, con i lotti già precedentemente inseriti
-           content:
-             application/json:
-               schema:
-                 type: array
-                 items:
-                   $ref: '#/components/schemas/Articolo'
-          
-  /blockchain:
-    get:
-       tags:
-         - consumer
-         - produttore 
-       summary: Ritorna tutte le blockchain che interessano la merce identificata dai parametri di query
-       parameters:
-         - name: idArticolo
-           in: query
-           required: true
-           schema:
-             type: string
-         - name: idPuntoVendita
-           in: query
-           schema:
-             type: string
-         - name: lotto
-           in: query
-           schema:
-             type: string
-       responses:
-         '200':
-           description: Operazione registrata correttamente
-           content:
-             application/json: 
-               schema: 
-                 type: array
-                 items: 
-                   $ref: '#/components/schemas/Blockchain'
-    post:
-        tags:
-           - produttore
-        summary: Inizia una nuova blockchain associata ad un articolo e lotto
-        parameters:
-         - name: idArticolo
-           in: query
-           required: true
-           schema:
-             type: string
-         - name: lotto
-           in: query
-           required: true
-           schema:
-             type: string
-        responses:
-          '200':
-            description: Id numerico della nuova operazione aggiunta alla blockchain
-            content:
-              application/json:
-                schema:
-                  type: string
-        requestBody:
+          description: Elenco delle operazioni tra le quali scegliere
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Operazione'                
+                type: array
+                items:
+                  type: string
+  '/storytelling/{idArticolo}/{natura}/text':
+    get:
+      description: Ritorna l'eventuale testo di storytelling associato all'operazione
+      parameters:
+        - name: idArticolo
+          in: path
+          description: Codice dell'articolo del quale cercare lo storytellin
+          required: true
+          schema:
+            type: string
+        - name: natura
+          in: path
+          description: Natura dell'operazione per la quale generare lo storytelling
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Testo associato all'operazione
+          content:
+            text/plain:
+              schema:
+                type: string
+  '/storytelling/{idArticolo}/{natura}/overrideText':
+    get:
+      description: Ritorna l'eventuale testo di storytelling associato all'operazione, da visualizzare coprendo i dati originali
+      parameters:
+        - name: idArticolo
+          in: path
+          description: Codice dell'articolo del quale cercare lo storytellin
+          required: true
+          schema:
+            type: string
+        - name: natura
+          in: path
+          description: Natura dell'operazione per la quale generare lo storytelling
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Testo associato all'operazione da sostituire a quello già presente
+          content:
+            text/plain:
+              schema:
+                type: string
+  '/storytelling/{idArticolo}/{natura}/images':
+    get:
+      description: Ritorna gli indirizzi delle immagini da inserire
+      parameters:
+        - name: idArticolo
+          in: path
+          description: Codice dell'articolo del quale cercare lo storytellin
+          required: true
+          schema:
+            type: string
+        - name: natura
+          in: path
+          description: Natura dell'operazione per la quale generare lo storytelling
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Url delle immagini
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: https://someUrl.com/image.png
+
 components:
   schemas:
     Articolo:
       type: object
+      required:
+        - idArticolo
+        - description
+        - lottiEsistenti
       properties:
         idArticolo:
           type: string
@@ -123,58 +212,96 @@ components:
           type: string
         lottiEsistenti:
           type: array
-          items: 
+          items:
             type: string
-    NuovaOperazione:
+    Soggetto:
       type: object
       required:
-        - natura
         - operatore
-        - descrizione
+        - azienda
+        - località
       properties:
-        descrizione:
-          type: string
-          description: Informazioni inserite dall'operatore riguardo all'operazione eseguita
         operatore:
           type: string
-          description: Nome dell'operatore che ha eseguito l'operazione
-        natura:
+          description: Nome dell'operatore che ha effettuato l'operazione
+        azienda:
           type: string
-          description: Natura dell'operazione eseguita (es. "semina")    
+          description: Azienda alla quale appartiene l'operatore
+        località:
+          type: string
+          description: Luogo dove o verso il quale è stata effettuata l'operazione
+
+    Ingrediente:
+      type: object
+      required:
+        - codice
+        - descrizione
+        - lotto
+      properties:
+        codice:
+          type: string
+          description: Codice dell'ingrediente utilizzato
+        descrizione:
+          type: string
+          description: Lotto dell'ingrediente utilizzato
+        lotto:
+          type: string
+          description: Lotto dell'ingrediente utilizzato
     Operazione:
       type: object
       required:
-        - id
+        - dataOperazione
         - natura
-        - operatore
         - descrizione
+        - ingredienti
+        - soggetti
+        - dataRegistrazione
       properties:
-        id:
+        dataOperazione:
           type: string
-          format: byte
-        idOperazionePrecedente:
-          type: string
-          nullable: true
-          format: byte
-          description: Hash dell'operazione precedente nella blockchain di appartenenaz
-        descrizione:
-          type: string
-          description: Informazioni inserite dall'operatore riguardo all'operazione eseguita
-        operatore:
-          type: string
-          description: Nome dell'operatore che ha eseguito l'operazione
+          format: date
+          description: Data in cui è stata effettuata l'operazione sul campo
         natura:
           type: string
-          description: Natura dell'operazione eseguita (es. "semina")
+          description: Natura dell'operazione eseguita (eg. "semina")
+        descrizione:
+          type: string
+          description: Informazioni inserite dall'operatore riguardo l'operazione effettuata
+        appezzamentoOperazione:
+          type: string
+          description: Appezzamento sul quale è stata effettuata l'operazione
+        ingredienti:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ingrediente'
+          description: Prodotti utilizzato nella operazione
+        soggetti:
+          type: array
+          items:
+            $ref: '#/components/schemas/Soggetto'
+            description: Eventuali soggetti coinvolti nell'operazione effettuata (eg. "corriere")
+        dataRegistrazione:
+          type: string
+          format: date
+          description: Timestamp del momento in cui è stata effettuata l'operazione
     Blockchain:
       type: object
+      required:
+        - idArticolo
+        - idLotto
+        - operazioni
       properties:
         idArticolo:
-           type: string
+          type: string
         idLotto:
-           type: string
-        operazione:
-           type: array
-           items:
-              $ref: '#/components/schemas/Operazione'
-           
+          type: string
+        operazioni:
+          type: array
+          items:
+            type: object
+            properties:
+              idOperazione:
+                type: string
+                description: Identificativo univoco (hash?) dell'operazione nella blockchain
+              operazione:
+                $ref: '#/components/schemas/Operazione'
